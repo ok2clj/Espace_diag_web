@@ -1,0 +1,11 @@
+{
+  "name": "espaceweb",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check dist/app.js && node --check dist/obd.js && node --check dist/scan.js && node --check dist/scenarios.js && node --check dist/workflows.js && node --check dist/service-demo.js"
+  },
+  "license": "GPL-3.0-or-later"
+}

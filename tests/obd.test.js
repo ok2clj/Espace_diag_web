@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {PIDS,decodePid,decodeDtcs,decodeVin,CommandChannel} from '../dist/obd.js';
+import {Elm327} from '../dist/vendor/elm327.js';
+const pid=k=>PIDS.find(p=>p.key===k);
+test('EOBD decodes physical units without treating missing data as zero',()=>{assert.equal(decodePid('410C1AF8\r>',pid('rpm')),1726);assert.equal(decodePid('41 05 7B\r>',pid('coolant')),83);assert.equal(decodePid('41423778\r>',pid('voltage')),14.2);assert.equal(decodePid('NO DATA\r>',pid('speed')),null);assert.equal(decodePid('410C1A\r>',pid('rpm')),null);assert.equal(decodePid('410D00\r>',pid('speed')),0);});
+test('DTC family bits, padding and duplicate ECU replies',()=>{assert.deepEqual(decodeDtcs('43029903800000\r4302990000\r>'),['P0299','P0380']);assert.deepEqual(decodeDtcs('47C1230000\r>','47'),['U0123']);assert.deepEqual(decodeDtcs('NO DATA'),[]);});
+test('VIN decodes single and numbered multi-line ELM replies',()=>{const v='VF1DEMA0000000001';const h=Buffer.from(v).toString('hex');assert.equal(decodeVin('490201'+h+'\r>'),v);assert.equal(decodeVin('014\r0:490201'+h.slice(0,8)+'\r1:'+h.slice(8,22)+'\r2:'+h.slice(22)+'\r>'),v);assert.equal(decodeVin('NO DATA'),null);});
+test('ELM channel waits for prompt across BLE chunks',async()=>{const t={write:async()=>{queueMicrotask(()=>{t.onData('410D');t.onData('40\r');t.onData('>');});}};const c=new CommandChannel(t);assert.equal(await c.pid(pid('speed')),64);});
+test('ELM channel serializes concurrent commands',async()=>{const seen=[];const t={write:async cmd=>{seen.push(cmd);setTimeout(()=>t.onData('OK\r>'),2);}};const c=new CommandChannel(t);await Promise.all([c.command('ATI'),c.command('ATRV')]);assert.deepEqual(seen,['ATI\r','ATRV\r']);});
+test('ELM timeout rejects and next command can run',async()=>{const t={write:async()=>{}};const c=new CommandChannel(t);await assert.rejects(c.command('ATI',5),/neodpověděl/);t.write=async()=>queueMicrotask(()=>t.onData('OK\r>'));assert.match(await c.command('ATI'),/OK/);});
+test('ISO-TP rejects truncated and out of order responses, preserves NRC',async()=>{const e=new Elm327({});const ecu={};assert.equal(await e._assemble('03410d40\r>',ecu,'010d',20),'410d40');await assert.rejects(e._assemble('07410d40\r>',ecu,'010d',20),/truncated/);await assert.rejects(e._assemble('100a62f190313233\r2234353637\r>',ecu,'22f190',20),/sequence/);await assert.rejects(e._assemble('037f2231\r>',ecu,'22f190',20),e=>e.nrc==='31');});
+test('ELM indexed multi-frame DTC response keeps continuation bytes',()=>{assert.deepEqual(decodeDtcs('00B\r0:43029903801234\r1:56780000\r>'),['P0299','P0380','P1234','C1678']);});
+test('ISO-TP initialization rejects question mark plus prompt',async()=>{const e=new Elm327({write:async()=>{}});e.send=async()=>'?\r>';e._drain=async()=>{};await assert.rejects(e._cmdOk('ATCAF0'),/rejected/);});

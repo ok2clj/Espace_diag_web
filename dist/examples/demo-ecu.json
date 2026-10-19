@@ -1,0 +1,69 @@
+{
+  "demoOnly": true,
+  "ecuname": "SIMULACE · servisní ECU",
+  "obd": {
+    "protocol": "CAN",
+    "send_id": "7E0",
+    "recv_id": "7E8"
+  },
+  "autoidents": [
+    {
+      "diagversion": "01",
+      "supplier": "DEMO",
+      "soft": "SIM01",
+      "version": "1"
+    }
+  ],
+  "data": {
+    "speed": {
+      "bitscount": 8,
+      "unit": "km/h"
+    },
+    "voltage": {
+      "bitscount": 16,
+      "scaled": true,
+      "step": 0.001,
+      "unit": "V"
+    },
+    "done": {
+      "bitscount": 8
+    }
+  },
+  "requests": [
+    {
+      "name": "Rychlost",
+      "sentbytes": "22D001",
+      "receivebyte_dataitems": {
+        "speed": {
+          "firstbyte": 4
+        }
+      }
+    },
+    {
+      "name": "Napětí",
+      "sentbytes": "22D002",
+      "receivebyte_dataitems": {
+        "voltage": {
+          "firstbyte": 4
+        }
+      }
+    },
+    {
+      "name": "Stav testu",
+      "sentbytes": "22D003",
+      "receivebyte_dataitems": {
+        "done": {
+          "firstbyte": 4
+        }
+      }
+    },
+    {
+      "name": "Start ukázkového testu",
+      "sentbytes": "3101D000"
+    },
+    {
+      "name": "Stop ukázkového testu",
+      "sentbytes": "3102D000"
+    }
+  ]
+}

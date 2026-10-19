@@ -1,0 +1,77 @@
+{
+  "schema": "espaceweb.service.v1",
+  "id": "demo-self-test",
+  "title": "Ukázkový servisní test · pouze simulace",
+  "demoOnly": true,
+  "reference": "Syntetický test; žádné reálné servisní příkazy.",
+  "target": {
+    "name": "SIMULACE · servisní ECU",
+    "tx": "7E0",
+    "rx": "7E8"
+  },
+  "instructions": [
+    "Jde výhradně o simulovaný postup bez spojení s autem.",
+    "Runner zkontroluje podmínky, zahájí test, sleduje stav a ověří výsledek.",
+    "Zastavením si vyzkoušíte odeslání definovaného ukončovacího příkazu."
+  ],
+  "fingerprint": [
+    {
+      "request": "22F194",
+      "response": "62F19453494D3031"
+    },
+    {
+      "request": "22F195",
+      "response": "62F19531"
+    }
+  ],
+  "preconditions": [
+    {
+      "request": "Rychlost",
+      "item": "speed",
+      "op": "eq",
+      "value": 0,
+      "label": "Vozidlo stojí"
+    },
+    {
+      "request": "Napětí",
+      "item": "voltage",
+      "op": "between",
+      "value": 12,
+      "max": 15.5,
+      "label": "Stabilní napájení"
+    }
+  ],
+  "steps": [
+    {
+      "type": "routine",
+      "title": "Spuštění simulovaného testu",
+      "request": "Start ukázkového testu",
+      "expect": "7101D000"
+    },
+    {
+      "type": "monitor",
+      "title": "Sledování dokončení",
+      "until": {
+        "request": "Stav testu",
+        "item": "done",
+        "op": "eq",
+        "value": 1
+      },
+      "intervalMs": 1000,
+      "timeoutMs": 15000
+    }
+  ],
+  "stop": {
+    "request": "Stop ukázkového testu",
+    "expect": "7102D000"
+  },
+  "postconditions": [
+    {
+      "request": "Stav testu",
+      "item": "done",
+      "op": "eq",
+      "value": 1,
+      "label": "Test dokončen"
+    }
+  ]
+}
